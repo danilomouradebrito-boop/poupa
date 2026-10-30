@@ -25,3 +25,9 @@ Os recursos usam caminhos relativos, compatíveis com GitHub Pages em `/poupa/`.
 A versão móvel e a reabertura offline foram verificadas em Chromium com viewport 390 × 844. Safari/iPhone físico ainda não foi testado. `data:` previews servem apenas para interação temporária: não instalam PWA nem garantem persistência.
 
 Ao alterar recursos estáticos, incremente o nome do cache em `sw.js`. A nova versão do service worker assume quando as janelas da versão anterior são fechadas.
+
+## Lista e escolha no comparador
+
+Cada feira tem uma lista de produtos planejados separada do carrinho. É possível digitar vários nomes separados por vírgula, sem preço. Tocar em um produto abre preço direto ou comparação; apenas a escolha explícita adiciona ao carrinho. Ao retirar um produto do carrinho, ele volta a ficar pendente na lista. Feiras antigas continuam funcionando e recebem uma lista vazia.
+
+O comparador não exige marcar uma escolha inicial. Ao tocar em “Levar esta opção”, a alternativa descartada de menor preço por quantidade é guardada como referência, e as demais opções saem da tela. O saldo das trocas estima o custo da mesma quantidade de produto ao preço proporcional dessa referência, com as condições promocionais cadastradas naquele momento. Não representa necessariamente uma compra de embalagens inteiras nem desconto efetivo no caixa. Trocas por alternativas mais caras reduzem o saldo; alterações de quantidade e promoções no carrinho recalculam a estimativa. Descontos promocionais são mostrados separadamente e não somados à economia estimada das trocas.

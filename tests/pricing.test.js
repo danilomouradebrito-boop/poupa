@@ -8,3 +8,17 @@ test('última unidade com desconto, inclusive grupos repetidos',()=>{const i={..
 test('condição não atendida preserva preço original',()=>assert.equal(total({...item,promo:{...item.promo,eligible:false}}),15));
 test('peso fracionado e arredondamento monetário',()=>{assert.equal(total({price:48,quantity:.35,weighted:true}),16.8);assert.equal(total({price:2.5,quantity:3}),7.5);});
 test('comparação normaliza medidas e separa dimensões',()=>{assert.equal(normalized({price:18,quantity:1,size:.75,unit:'kg'}).value,2.4);assert.equal(normalized({price:4,quantity:4,size:200,unit:'g'}).value,2);assert.notEqual(normalized({...item,unit:'g'}).dimension,normalized({...item,unit:'ml'}).dimension);});
+
+import {swapDifference} from '../pricing.js';
+test('troca compara mesma quantidade, não confunde menor peso com economia',()=>{
+ const reference={price:18,quantity:1,size:750,unit:'g'};
+ assert.equal(swapDifference({price:4,quantity:4,size:200,unit:'g',reference}),3.2);
+ assert.equal(swapDifference({price:6,quantity:1,size:200,unit:'g',reference}),-1.2);
+});
+test('troca acompanha perda da promoção e quantidade atual',()=>{
+ const reference={price:5,quantity:1,size:200,unit:'g'};
+ assert.equal(swapDifference({...item,reference}),1.5);
+ assert.equal(swapDifference({...item,quantity:2,reference}),0);
+ assert.equal(swapDifference({...item,quantity:4,reference}),2);
+ assert.equal(swapDifference(item),0);
+});
