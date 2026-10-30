@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {total,normalized} from '../pricing.js';
+const item={price:5,quantity:3,size:200,unit:'g',promo:{type:'threshold',threshold:3,price:4.5,eligible:true}};
+test('remover unidade desativa desconto e restaurar reativa',()=>{assert.equal(total(item),13.5);assert.equal(total({...item,quantity:2}),10);assert.equal(total({...item,quantity:4}),18);});
+test('conjuntos cobram sobras no preço original',()=>{assert.equal(total({...item,quantity:4,promo:{...item.promo,type:'bundle',price:12}}),17);});
+test('última unidade com desconto, inclusive grupos repetidos',()=>{const i={...item,promo:{...item.promo,type:'nth',price:0}};assert.equal(total(i),10);assert.equal(total({...i,quantity:7}),25);});
+test('condição não atendida preserva preço original',()=>assert.equal(total({...item,promo:{...item.promo,eligible:false}}),15));
+test('peso fracionado e arredondamento monetário',()=>{assert.equal(total({price:48,quantity:.35,weighted:true}),16.8);assert.equal(total({price:2.5,quantity:3}),7.5);});
+test('comparação normaliza medidas e separa dimensões',()=>{assert.equal(normalized({price:18,quantity:1,size:.75,unit:'kg'}).value,2.4);assert.equal(normalized({price:4,quantity:4,size:200,unit:'g'}).value,2);assert.notEqual(normalized({...item,unit:'g'}).dimension,normalized({...item,unit:'ml'}).dimension);});
