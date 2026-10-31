@@ -25,3 +25,13 @@ test('price trends normalize sizes and keep unspecified packages separate',()=>{
  const volume=stats[0].series.find(s=>s.label==='100 ml');
  assert.deepEqual(volume.points.map(p=>p.value),[1,1.2]);
 });
+
+import {fairsInPeriod,monthBounds} from '../insights.js';
+test('inclusive date ranges include intermediate purchases and exclude undated fairs',()=>{
+ const fairs=['2026-10-11','2026-10-12','2026-10-28','2026-11-20','2026-11-21',null].map(date=>({date}));
+ assert.deepEqual(fairsInPeriod(fairs,'2026-10-12','2026-11-20').map(f=>f.date),['2026-10-12','2026-10-28','2026-11-20']);
+ assert.equal(fairsInPeriod(fairs,'2026-10-12','2026-10-12').length,1);
+ assert.equal(fairsInPeriod(fairs,'2026-11-20','2026-10-12').length,0);
+ assert.deepEqual(monthBounds('2024-02'),['2024-02-01','2024-02-29']);
+ assert.equal(fairsInPeriod(fairs,...monthBounds('2026-10')).length,3);
+});

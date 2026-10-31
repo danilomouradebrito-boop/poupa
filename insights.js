@@ -34,3 +34,13 @@ export function purchaseStats(fairs) {
  });
  return [...products.values()].map(product=>({...product,frequency:product.visits.size,series:[...product.series.values()].map(series=>({...series,points:series.points.sort((a,b)=>a.date.localeCompare(b.date)).map(point=>({date:point.date,value:point.cost/point.amount}))}))}));
 }
+
+export function fairsInPeriod(fairs, start, end) {
+ if(!start || !end || start>end) return [];
+ return fairs.filter(fair=>fair.date && fair.date>=start && fair.date<=end);
+}
+export function monthBounds(month) {
+ if(!/^\d{4}-\d{2}$/.test(month)) return ['', ''];
+ const [year,number]=month.split('-').map(Number);
+ return [month+'-01',month+'-'+new Date(year,number,0).getDate()];
+}

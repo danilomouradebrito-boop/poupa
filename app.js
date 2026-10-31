@@ -1,4 +1,4 @@
-import {productKey,productName,pendingItems,omittedItems,purchaseStats} from './insights.js';
+import {productKey,productName,pendingItems,omittedItems,purchaseStats,fairsInPeriod,monthBounds} from './insights.js';
 import {total,normalized,swapDifference} from './pricing.js';
 const $=id=>document.getElementById(id);
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -121,6 +121,14 @@ function swapDescription(item){
 function localDate(){const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;}
 let historyIndex=state.active;
 $('history-month').value=localDate().slice(0,7);
+$('period-start').value=localDate();$('period-end').value=localDate();
+let rangeAnchor=null;
+function periodFairs(){
+ const mode=$('period-mode').value;
+ if(mode==='all')return state.fairs;
+ const [start,end]=mode==='month'?monthBounds($('history-month').value):[$('period-start').value,mode==='day'?$('period-start').value:$('period-end').value];
+ return fairsInPeriod(state.fairs,start,end);
+}
 function switchPage(insights){
  $('shopping-view').hidden=insights;$('insights-view').hidden=!insights;
  for(const [id,active] of [['shopping-tab',!insights],['insights-tab',insights]]){$(id).classList.toggle('active',active);$(id).setAttribute('aria-pressed',String(active));}
@@ -130,28 +138,37 @@ $('shopping-tab').onclick=()=>switchPage(false);
 $('insights-tab').onclick=()=>switchPage(true);
 function dateLabel(date){return date?new Date(date+'T12:00:00').toLocaleDateString('pt-BR'):'Sem data';}
 function renderInsights(){
- const selected=state.fairs[historyIndex]||fair();
+ const mode=$('period-mode').value, filtered=periodFairs();
+ const [start,end]=mode==='month'?monthBounds($('history-month').value):[$('period-start').value,mode==='day'?$('period-start').value:$('period-end').value];
+ $('period-dates').hidden=mode==='month'||mode==='all';$('period-end-label').hidden=mode==='day';
+ $('period-error').textContent=mode!=='all'&&(!start||!end||start>end)?'Informe uma data final igual ou posterior à inicial.':'';
+ $('period-hint').textContent=mode==='range'?(rangeAnchor?'Agora escolha o último dia, neste mês ou em outro.':'No calendário, toque no primeiro e no último dia. Você pode mudar o mês entre os toques.') : mode==='day'?'Toque em um dia no calendário.':mode==='month'?'Todas as feiras do mês selecionado entram nos cálculos.':'Inclui todas as feiras salvas, inclusive as que ainda estão sem data.';
+ $('period-summary').textContent=(mode==='all'?'Todo o histórico':start&&end&&start<=end?dateLabel(start)+' a '+dateLabel(end):'Período incompleto')+' · '+filtered.length+' feira(s) · '+money(filtered.reduce((sum,f)=>sum+f.items.reduce((sum,item)=>sum+total(item),0),0))+' no carrinho';
+ if(!filtered.includes(state.fairs[historyIndex]))historyIndex=state.fairs.indexOf(filtered[0]);
+ $('history-selected').hidden=historyIndex<0;
+ const selected=state.fairs[historyIndex]||{name:'',items:[],list:[]};
  $('history-name').textContent=selected.name;
  $('history-date').value=selected.date||'';
  const pending=pendingItems(selected), omitted=omittedItems(state.fairs[historyIndex-1],selected);
  $('history-detail').innerHTML=`<p><strong>${money(selected.items.reduce((sum,item)=>sum+total(item),0))}</strong> no carrinho · ${selected.items.length} produtos</p><h3>Ficou fora do carrinho</h3><p class="muted">Itens desta lista sem compra registrada.</p><p>${pending.length?pending.map(item=>esc(item.name)).join(' · '):'Nenhum item pendente nesta lista.'}</p>${historyIndex>0?`<h3>Da lista anterior</h3><p class="muted">Estavam em ${esc(state.fairs[historyIndex-1].name)} e não entraram nesta lista nem no carrinho.</p><p>${omitted.length?omitted.map(item=>esc(item.name)).join(' · '):'Todos os itens da lista anterior estão presentes.'}</p>`:''}`;
  const month=$('history-month').value;
  const dated=state.fairs.map((f,i)=>({f,i})).filter(({f})=>f.date?.slice(0,7)===month);
- const undated=state.fairs.map((f,i)=>({f,i})).filter(({f})=>!f.date);
+ const periodEntries=state.fairs.map((f,i)=>({f,i})).filter(({f})=>filtered.includes(f));
  const buttons=entries=>entries.map(({f,i})=>`<button class="history-fair secondary" data-history="${i}" aria-pressed="${i===historyIndex}">${esc(f.name)} · ${dateLabel(f.date)}</button>`).join('');
- $('history-fairs').innerHTML=buttons(dated)+(dated.length?'':'<p class="muted">Nenhuma feira neste mês.</p>')+(undated.length?'<h3>Sem data</h3>'+buttons(undated):'');
+ $('history-fairs').innerHTML=buttons(periodEntries)+(periodEntries.length?'':'<p class="muted">Nenhuma feira neste período.</p>')+(mode!=='all'&&state.fairs.some(f=>!f.date)?'<p class="muted">Feiras sem data ficam fora deste filtro. Selecione Todo o histórico para informar as datas.</p>':'');
  let calendar=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day=>`<span class="weekday">${day}</span>`).join('');
  if(/^\d{4}-\d{2}$/.test(month)){
   const [year,m]=month.split('-').map(Number), offset=new Date(year,m-1,1).getDay(), days=new Date(year,m,0).getDate();
   calendar+='<span></span>'.repeat(offset);
   for(let day=1;day<=days;day++){
    const date=month+'-'+String(day).padStart(2,'0'), entries=dated.filter(({f})=>f.date===date);
-   calendar+=entries.length?`<button class="calendar-day has-fair" data-day="${date}" aria-label="${dateLabel(date)}: ${entries.length} feira(s)">${day}<small>${entries.length} feira(s)</small></button>`:`<span class="calendar-day">${day}</span>`;
+   const inRange=mode==='all'||(start&&end&&date>=start&&date<=end);
+   calendar+=`<button class="calendar-day ${entries.length?'has-fair':''} ${inRange?'in-period':''}" data-day="${date}" aria-pressed="${Boolean(inRange)}" aria-label="${dateLabel(date)}: ${entries.length} feira(s)">${day}${entries.length?`<small>${entries.length} feira(s)</small>`:''}</button>`;
   }
  }
  $('fair-calendar').innerHTML=calendar;
- const stats=purchaseStats(state.fairs);
- const ranking=(items,kind)=>items.slice(0,5).map(item=>`<div class="insight-row"><span>${esc(item.name)}</span><strong>${kind==='spent'?money(item.spent):item.frequency+' feira(s)'}</strong></div>`).join('')||'<p class="muted">Adicione produtos ao carrinho para começar.</p>';
+ const stats=purchaseStats(filtered);
+ const ranking=(items,kind)=>items.slice(0,5).map(item=>`<div class="insight-row"><span>${esc(item.name)}</span><strong>${kind==='spent'?money(item.spent):item.frequency+' feira(s)'}</strong></div>`).join('')||'<p class="muted">Nenhuma compra registrada neste período.</p>';
  $('frequent-products').innerHTML=ranking([...stats].sort((a,b)=>b.frequency-a.frequency),'frequency');
  $('rare-products').innerHTML=ranking([...stats].sort((a,b)=>a.frequency-b.frequency),'frequency');
  $('costly-products').innerHTML=ranking([...stats].sort((a,b)=>b.spent-a.spent),'spent');
@@ -164,4 +181,14 @@ function renderInsights(){
 $('history-month').onchange=renderInsights;
 $('history-date').onchange=()=>{state.fairs[historyIndex].date=$('history-date').value||null;save();renderInsights();};
 $('history-fairs').onclick=e=>{const button=e.target.closest('[data-history]');if(button){historyIndex=Number(button.dataset.history);renderInsights();}};
-$('fair-calendar').onclick=e=>{const button=e.target.closest('[data-day]');if(!button)return;historyIndex=state.fairs.findIndex(f=>f.date===button.dataset.day);renderInsights();$('history-fairs').querySelector(`[data-history="${historyIndex}"]`)?.focus();};
+$('fair-calendar').onclick=e=>{
+ const button=e.target.closest('[data-day]');if(!button)return;
+ const date=button.dataset.day;
+ if($('period-mode').value==='range'){
+  if(!rangeAnchor){rangeAnchor=date;$('period-start').value=date;$('period-end').value=date;}
+  else{[$('period-start').value,$('period-end').value]=[rangeAnchor,date].sort();rangeAnchor=null;}
+ }else{$('period-mode').value='day';$('period-start').value=date;$('period-end').value=date;rangeAnchor=null;}
+ renderInsights();
+};
+$('period-mode').onchange=()=>{rangeAnchor=null;renderInsights();};
+for(const id of ['period-start','period-end'])$(id).onchange=()=>{rangeAnchor=null;if(id==='period-start'&&$(id).value)$('history-month').value=$(id).value.slice(0,7);renderInsights();};
