@@ -1,7 +1,7 @@
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
-const files = ['index.html','app.js','pricing.js','insights.js','style.css','manifest.webmanifest','sw.js','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png'];
-const mime = {js:'text/javascript',css:'text/css',html:'text/html; charset=utf-8',webmanifest:'application/manifest+json',png:'image/png'};
+const files = ['index.html','app.js','pricing.js','insights.js','offers.js','offers-ui.js','style.css','manifest.webmanifest','sw.js','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png', ...['tesseract.min.js','worker.min.js','tesseract-core-lstm.wasm.js','por.traineddata.gz'].map(file=>'vendor/ocr/'+file)];
+const mime = {js:'text/javascript',css:'text/css',html:'text/html; charset=utf-8',webmanifest:'application/manifest+json',png:'image/png',gz:'application/gzip'};
 http.createServer(async(req,res)=>{
  const pathname=new URL(req.url,'http://localhost').pathname;
  // Mirror the GitHub Pages subdirectory locally for installation testing.

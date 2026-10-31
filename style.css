@@ -28,3 +28,29 @@ input::-webkit-datetime-edit{min-width:0;padding:0}
  .insight-grid{grid-template-columns:minmax(0,1fr)}
  .history-fair{max-width:100%;margin:4px 0;overflow-wrap:anywhere}
 }
+#offers-view .offer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.offer-destination{font-size:14px;color:#246447;background:#eaf1df;padding:12px 16px;border-radius:10px;overflow-wrap:anywhere}
+.offer-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.offer-actions p{flex-basis:100%;margin:0}
+.offer-actions .primary{flex:1;min-width:180px}
+#flyer-stage{position:relative;line-height:0;border-radius:12px;overflow:hidden;background:#f2f4ee}
+#flyer-stage.selecting{cursor:crosshair;outline:2px solid #246447;outline-offset:3px}
+#flyer-image{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#flyer-selection{position:absolute;border:3px solid #246447;background:#c4de7733;pointer-events:none;box-shadow:0 0 0 10000px #203b3340}
+#offer-review{scroll-margin-top:20px;min-width:0}
+.offer-confirm{margin:20px 0;line-height:1.5;align-items:flex-start}
+.offer-confirm input{margin-top:4px;min-height:20px;min-width:20px}
+#offer-raw-text{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 system-ui;max-height:250px;overflow:auto}
+#ocr-status,#offer-message{font-size:13px;line-height:1.5;color:#396044}
+button:disabled{opacity:.55;cursor:default}
+#use-offer-dialog{max-height:90dvh;overflow:auto}
+#use-offer-dialog .check{align-items:flex-start;line-height:1.5}
+#use-offer-dialog .check input{min-height:20px;min-width:20px;margin-top:3px}
+.cart-regular-label{margin-top:14px;max-width:320px}
+.page-tabs{max-width:650px}.page-tabs button{min-width:0;color:#396044}
+@media(max-width:750px){
+ #offers-view .offer-layout{grid-template-columns:minmax(0,1fr);gap:0}
+ .offer-dates{grid-template-columns:minmax(0,1fr);gap:0}
+ .upload-label input{padding:10px 6px;font-size:13px}
+ .page-tabs button{font-size:12px;padding:11px 4px}
+}

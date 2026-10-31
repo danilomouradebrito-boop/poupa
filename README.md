@@ -1,6 +1,6 @@
 # Poupa
 
-Aplicativo web de comparação de preços e orçamento de supermercado, adaptado ao celular. Sem dependências externas. Requer Node.js 22 ou superior.
+Aplicativo web de comparação de preços e orçamento de supermercado, adaptado ao celular. Servidor sem dependências npm; OCR local incluído em `vendor/ocr`. Requer Node.js 22 ou superior para executar o servidor.
 
 ## Executar
 
@@ -15,6 +15,16 @@ Adicione produtos só com nome e preço ou abra Comparar para informar conteúdo
 Cada feira mantém orçamento e carrinho separados. Alterar quantidades recalcula promoções a partir do preço original. Dados persistem no localStorage deste navegador; não há conta, sincronização ou integração com lojas. Comparações em andamento não persistem ao recarregar. O carrinho mantém as opções adicionadas.
 
 Limitações atuais: uma regra por produto; sem combinação entre produtos diferentes, limite promocional por CPF ou leitura de etiquetas. Valores por kg são calculados a partir do peso informado, sem estimativa automática.
+
+## Encartes
+
+A aba Encartes aceita foto ou print (até 15 MB), sem API de alimentos nem cadastro de supermercados. Marque uma oferta com dois toques nos cantos opostos da imagem e use Ler oferta marcada. O Tesseract lê a área no aparelho; a foto não é enviada a um serviço. Os arquivos do leitor, de aproximadamente 5 MB, são baixados do próprio site apenas na primeira leitura e guardados pelo service worker, quando o navegador permite. O OCR precisa de HTTP local ou HTTPS; prévias `data:` permitem apenas revisão/preenchimento manual.
+
+Revise nome, preço, regra, quantidade, mercado, validade e condições. A leitura de layouts variados e valores em sobrescrito pode falhar; múltiplos preços ficam para escolha manual. Datas, preços sem oferta e restrições não são inventados. Descontos percentuais e “leve e pague” devem ser convertidos manualmente para preço por unidade, conjunto ou última unidade. O usuário confirma a revisão antes de adicionar. A regra de quantidade mínima sugere a quantidade necessária para a lista. Uma imagem pode fornecer várias ofertas, lidas uma de cada vez. A foto e o rascunho não persistem ao recarregar; os dados revisados dos produtos adicionados persistem na lista.
+
+Tocar no produto planejado abre a confirmação da compra. Condições precisam ser marcadas novamente; datas informadas são verificadas contra o dia local da confirmação. Ofertas vencidas/futuras ou sem condição atendida usam o preço sem oferta, se informado, ou pedem esse valor. Uma promoção por quantidade sem preço normal só pode entrar no carrinho nas quantidades cujo total é conhecido (mínimo cumprido ou conjuntos completos). Diminuir abaixo do mínimo ou comprar sobras exige informar o preço normal. Não são calculadas economias em relação a preços normais desconhecidos. Compras já confirmadas mantêm seu preço histórico.
+
+Validação: testes de regras, condições e validade em `tests/offers.test.js`, além de OCR real em Chromium com imagem de teste, confirmação da lista/carrinho, persistência e telas móveis. Safari/iPhone físico ainda depende de validação no aparelho. Fontes e licenças do leitor em `vendor/ocr/README.md`.
 
 ## Uso pessoal no iPhone
 
