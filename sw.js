@@ -1,5 +1,5 @@
-const CACHE = 'poupa-v3';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './pricing.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
+const CACHE = 'poupa-v4';
+const ASSETS = ['./', './index.html', './style.css', './app.js', './pricing.js', './insights.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
 });

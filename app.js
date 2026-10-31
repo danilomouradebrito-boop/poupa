@@ -1,9 +1,10 @@
+import {productKey,productName,pendingItems,omittedItems,purchaseStats} from './insights.js';
 import {total,normalized,swapDifference} from './pricing.js';
 const $=id=>document.getElementById(id);
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state;try{state=JSON.parse(localStorage.getItem('poupa-v1'));}catch{}
-if(!state?.fairs?.length) state={active:0,fairs:[{name:'Minha primeira feira',budget:null,items:[]}]};
+if(!state?.fairs?.length) state={active:0,fairs:[{name:'Minha primeira feira',date:localDate(),budget:null,items:[]}]};
 for(const f of state.fairs) if(!Array.isArray(f.list)) f.list=[];
 let selectedListId=null;
 const makeId=()=>globalThis.crypto?.randomUUID?.() ?? 'item-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -37,7 +38,7 @@ $('items').onclick=e=>{const b=e.target.closest('[data-action]');if(!b)return;co
 $('budget').onchange=()=>{const v=$('budget').value;fair().budget=v===''?null:Math.max(0,Number(v));save();render();};
 $('fair-select').onchange=()=>{closeEditor(false);state.active=Number($('fair-select').value);save();render();};
 $('new-fair').onclick=()=>$('fair-dialog').showModal();$('cancel-fair').onclick=()=>$('fair-dialog').close();
-$('fair-form').onsubmit=e=>{e.preventDefault();const name=$('fair-name').value.trim();if(!name)return;closeEditor(false);state.fairs.push({name,budget:null,items:[],list:[]});state.active=state.fairs.length-1;save();render();$('fair-dialog').close();$('fair-form').reset();};
+$('fair-form').onsubmit=e=>{e.preventDefault();const name=$('fair-name').value.trim();if(!name)return;closeEditor(false);state.fairs.push({name,date:localDate(),budget:null,items:[],list:[]});state.active=state.fairs.length-1;save();render();$('fair-dialog').close();$('fair-form').reset();};
 render();updateForm();
 
 $('see-cart').onclick=()=>$('cart').scrollIntoView({behavior:'smooth',block:'start'});
@@ -116,3 +117,51 @@ function swapDescription(item){
  const difference=swapDifference(item);const rate=normalized(item.reference);
  return `<p class="swap-note">${difference>=0?'Economia estimada':'Custo extra estimado'}: <strong>${money(Math.abs(difference))}</strong><br>Em relação a ${esc(item.reference.name)} (${money(rate.value)} / ${rate.label}), para a mesma quantidade de produto.</p>`;
 }
+
+function localDate(){const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;}
+let historyIndex=state.active;
+$('history-month').value=localDate().slice(0,7);
+function switchPage(insights){
+ $('shopping-view').hidden=insights;$('insights-view').hidden=!insights;
+ for(const [id,active] of [['shopping-tab',!insights],['insights-tab',insights]]){$(id).classList.toggle('active',active);$(id).setAttribute('aria-pressed',String(active));}
+ if(insights){historyIndex=state.active;renderInsights();}
+}
+$('shopping-tab').onclick=()=>switchPage(false);
+$('insights-tab').onclick=()=>switchPage(true);
+function dateLabel(date){return date?new Date(date+'T12:00:00').toLocaleDateString('pt-BR'):'Sem data';}
+function renderInsights(){
+ const selected=state.fairs[historyIndex]||fair();
+ $('history-name').textContent=selected.name;
+ $('history-date').value=selected.date||'';
+ const pending=pendingItems(selected), omitted=omittedItems(state.fairs[historyIndex-1],selected);
+ $('history-detail').innerHTML=`<p><strong>${money(selected.items.reduce((sum,item)=>sum+total(item),0))}</strong> no carrinho · ${selected.items.length} produtos</p><h3>Ficou fora do carrinho</h3><p class="muted">Itens desta lista sem compra registrada.</p><p>${pending.length?pending.map(item=>esc(item.name)).join(' · '):'Nenhum item pendente nesta lista.'}</p>${historyIndex>0?`<h3>Da lista anterior</h3><p class="muted">Estavam em ${esc(state.fairs[historyIndex-1].name)} e não entraram nesta lista nem no carrinho.</p><p>${omitted.length?omitted.map(item=>esc(item.name)).join(' · '):'Todos os itens da lista anterior estão presentes.'}</p>`:''}`;
+ const month=$('history-month').value;
+ const dated=state.fairs.map((f,i)=>({f,i})).filter(({f})=>f.date?.slice(0,7)===month);
+ const undated=state.fairs.map((f,i)=>({f,i})).filter(({f})=>!f.date);
+ const buttons=entries=>entries.map(({f,i})=>`<button class="history-fair secondary" data-history="${i}" aria-pressed="${i===historyIndex}">${esc(f.name)} · ${dateLabel(f.date)}</button>`).join('');
+ $('history-fairs').innerHTML=buttons(dated)+(dated.length?'':'<p class="muted">Nenhuma feira neste mês.</p>')+(undated.length?'<h3>Sem data</h3>'+buttons(undated):'');
+ let calendar=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day=>`<span class="weekday">${day}</span>`).join('');
+ if(/^\d{4}-\d{2}$/.test(month)){
+  const [year,m]=month.split('-').map(Number), offset=new Date(year,m-1,1).getDay(), days=new Date(year,m,0).getDate();
+  calendar+='<span></span>'.repeat(offset);
+  for(let day=1;day<=days;day++){
+   const date=month+'-'+String(day).padStart(2,'0'), entries=dated.filter(({f})=>f.date===date);
+   calendar+=entries.length?`<button class="calendar-day has-fair" data-day="${date}" aria-label="${dateLabel(date)}: ${entries.length} feira(s)">${day}<small>${entries.length} feira(s)</small></button>`:`<span class="calendar-day">${day}</span>`;
+  }
+ }
+ $('fair-calendar').innerHTML=calendar;
+ const stats=purchaseStats(state.fairs);
+ const ranking=(items,kind)=>items.slice(0,5).map(item=>`<div class="insight-row"><span>${esc(item.name)}</span><strong>${kind==='spent'?money(item.spent):item.frequency+' feira(s)'}</strong></div>`).join('')||'<p class="muted">Adicione produtos ao carrinho para começar.</p>';
+ $('frequent-products').innerHTML=ranking([...stats].sort((a,b)=>b.frequency-a.frequency),'frequency');
+ $('rare-products').innerHTML=ranking([...stats].sort((a,b)=>a.frequency-b.frequency),'frequency');
+ $('costly-products').innerHTML=ranking([...stats].sort((a,b)=>b.spent-a.spent),'spent');
+ const trends=stats.flatMap(product=>product.series.filter(series=>series.points.length>=2).map(series=>({product,series})));
+ $('price-history').innerHTML=trends.map(({product,series})=>{
+  const first=series.points[0],last=series.points.at(-1),change=(last.value/first.value-1)*100;
+  return `<details><summary>${esc(product.name)} · ${Math.abs(change).toLocaleString('pt-BR',{maximumFractionDigits:1})}% ${change>0?'a mais':change<0?'a menos':'de variação'}</summary><p class="muted">Por ${esc(series.label)}, entre ${dateLabel(first.date)} e ${dateLabel(last.date)}.</p><table class="price-table"><thead><tr><th>Data</th><th>Preço efetivo</th></tr></thead><tbody>${series.points.map(point=>`<tr><td>${dateLabel(point.date)}</td><td>${money(point.value)}</td></tr>`).join('')}</tbody></table></details>`;
+ }).join('')||'<p class="muted">As variações aparecem quando o mesmo produto tem registros em pelo menos duas datas. Produtos sem conteúdo informado são acompanhados por embalagem.</p>';
+}
+$('history-month').onchange=renderInsights;
+$('history-date').onchange=()=>{state.fairs[historyIndex].date=$('history-date').value||null;save();renderInsights();};
+$('history-fairs').onclick=e=>{const button=e.target.closest('[data-history]');if(button){historyIndex=Number(button.dataset.history);renderInsights();}};
+$('fair-calendar').onclick=e=>{const button=e.target.closest('[data-day]');if(!button)return;historyIndex=state.fairs.findIndex(f=>f.date===button.dataset.day);renderInsights();$('history-fairs').querySelector(`[data-history="${historyIndex}"]`)?.focus();};
