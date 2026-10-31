@@ -13,3 +13,18 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .page-tabs{margin:0 0 24px;max-width:520px}.insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}.insight-row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #edf0e8;font-size:14px}.insight-row span{overflow-wrap:anywhere}.insight-row strong{white-space:nowrap}.fair-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:20px 0}.weekday{text-align:center;font-size:12px;color:#627c6a}.calendar-day{text-align:center;padding:12px 2px;min-height:52px;font-size:14px}.has-fair{background:#eaf1df;border:1px solid #80ab71;color:#246447}.calendar-day small{display:block;font-size:9px;margin-top:3px}.history-fair{margin:4px;min-height:44px}.history-fair[aria-pressed=true]{background:#eaf1df;border-color:#246447}.price-table{width:100%;text-align:left;border-collapse:collapse}.price-table th,.price-table td{padding:10px;border-bottom:1px solid #edf0e8}#insights-view h3{font-size:16px}#insights-view input{max-width:280px}
 
 .calendar-day{background:transparent;border:1px solid #e0e6dc;color:#526a48}.calendar-day.in-period{background:#eaf1df}.calendar-day.has-fair{border:2px solid #246447;font-weight:700}#period-summary{margin:18px 0}#period-error:empty{display:none}
+
+/* Allow form grids and native iOS date controls to shrink inside their cards. */
+.layout>* ,.card,.two>label{min-width:0}
+.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+input,select{min-width:0;max-width:100%}
+input[type="date"],input[type="month"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%}
+input::-webkit-date-and-time-value{min-width:0;text-align:left}
+input::-webkit-datetime-edit{min-width:0;padding:0}
+#period-dates{grid-template-columns:repeat(2,minmax(0,1fr))}
+#insights-view input[type="date"],#insights-view input[type="month"]{max-width:100%}
+@media(max-width:750px){
+ #period-dates{grid-template-columns:minmax(0,1fr);gap:0}
+ .insight-grid{grid-template-columns:minmax(0,1fr)}
+ .history-fair{max-width:100%;margin:4px 0;overflow-wrap:anywhere}
+}
