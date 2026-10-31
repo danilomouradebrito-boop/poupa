@@ -9,7 +9,7 @@ let selectedListId=null;
 const makeId=()=>globalThis.crypto?.randomUUID?.() ?? 'item-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 let comparing=false,options=[];
 const fair=()=>state.fairs[state.active]||state.fairs[0];
-function save(){try{localStorage.setItem('poupa-v1',JSON.stringify(state));$('storage-status').hidden=true;}catch{$('storage-status').hidden=false;$('storage-status').textContent='Não foi possível salvar as feiras. Nesta prévia, elas duram apenas enquanto a página estiver aberta.';}}
+function save(){try{localStorage.setItem('poupa-v1',JSON.stringify(state));$('storage-status').hidden=true;}catch{$('storage-status').hidden=false;$('storage-status').textContent='Não foi possível salvar neste navegador. Mantenha a página aberta para não perder suas alterações.';}}
 function read(){const weighted=$('weighted').checked;const promo=$('rule').value==='none'||weighted?null:{type:$('rule').value,threshold:Number($('threshold').value),price:Number($('promo-price').value),condition:$('condition').value,eligible:!$('condition').value||$('eligible').checked};return {id:(globalThis.crypto?.randomUUID?.() ?? 'item-'+Date.now()+'-'+Math.random().toString(36).slice(2)),name:$('name').value.trim(),price:Number($('price').value),quantity:Number($('quantity').value),weighted,size:weighted?1:Number($('size').value),unit:weighted?'kg':$('unit').value,promo};}
 function valid(i){return i.name&&i.price>0&&Number.isFinite(i.price)&&i.quantity>0&&(i.weighted||Number.isInteger(i.quantity))&&(!comparing||i.size>0)&&(!i.promo||(Number.isInteger(i.promo.threshold)&&i.promo.threshold>=2&&i.promo.price>=0&&i.promo.price<=(i.promo.type==='bundle'?i.price*i.promo.threshold:i.price)));}
 function promoText(i){if(!i.promo)return '';const r=i.promo;const rule=r.type==='threshold'?`A partir de ${r.threshold}: ${money(r.price)} cada`:r.type==='bundle'?`A cada ${r.threshold}: ${money(r.price)} o conjunto`:`A cada ${r.threshold}: última por ${money(r.price)}`;return `<p>${rule}${r.condition?' · '+esc(r.condition):''}</p><p class="${!r.eligible||i.quantity<r.threshold?'notice':''}">${!r.eligible?'Condição não confirmada: preço original aplicado.':i.quantity<r.threshold?`Promoção inativa: mínimo de ${r.threshold}. Preço original aplicado.`:'Promoção aplicada. Unidades fora do conjunto usam o preço original.'}</p>`;}
@@ -75,12 +75,9 @@ $('compare-form').onsubmit=e=>{e.preventDefault();const items=compareItems();if(
 addCompareCard();addCompareCard();
 
 if ('serviceWorker' in navigator && ['http:', 'https:'].includes(location.protocol)) {
- navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready).then(() => {
-   $('offline-status').textContent='Pronto para usar sem internet neste dispositivo.';
- }).catch(() => { $('offline-status').textContent='A preparação para uso sem internet falhou. Abra novamente com conexão.'; });
-} else {
- $('offline-status').textContent='Esta prévia não é instalável. A instalação no iPhone requer o endereço publicado no Safari.';
+ navigator.serviceWorker.register('./sw.js').catch(error => console.warn('Não foi possível preparar o acesso offline.', error));
 }
+if(location.protocol==='data:') $('storage-note').textContent='Prévia temporária: aqui o salvamento não está disponível.';
 
 function renderList(){
  const f=fair();const bought=entry=>f.items.some(i=>i.listId===entry.id);
